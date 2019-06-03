@@ -1,9 +1,9 @@
 /*
     PiFmRds - FM/RDS transmitter for the Raspberry Pi
     Copyright (C) 2014 Christophe Jacquet, F8FTK
-    
+
     See https://github.com/ChristopheJacquet/PiFmRds
-    
+
     rds_wav.c is a test program that writes a RDS baseband signal to a WAV
     file. It requires libsndfile.
 
@@ -19,7 +19,7 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
-    
+
     fm_mpx.c: generates an FM multiplex signal containing RDS plus possibly
     monaural or stereo audio.
 */
@@ -47,7 +47,7 @@ float low_pass_fir[FIR_PHASES][FIR_TAPS];
 float carrier_38[] = {0.0, 0.8660254037844386, 0.8660254037844388, 1.2246467991473532e-16, -0.8660254037844384, -0.8660254037844386};
 
 float carrier_19[] = {0.0, 0.5, 0.8660254037844386, 1.0, 0.8660254037844388, 0.5, 1.2246467991473532e-16, -0.5, -0.8660254037844384, -1.0, -0.8660254037844386, -0.5};
-    
+
 int phase_38 = 0;
 int phase_19 = 0;
 
@@ -64,7 +64,7 @@ float fir_buffer_left[FIR_TAPS] = {0};
 float fir_buffer_right[FIR_TAPS] = {0};
 int fir_index = 0;
 int channels;
-float left_max=1, right_max=1;  // start compressor with low gain 
+float left_max=1, right_max=1;  // start compressor with low gain
 
 SNDFILE *inf;
 
@@ -73,9 +73,9 @@ SNDFILE *inf;
 float *alloc_empty_buffer(size_t length) {
     float *p = malloc(length * sizeof(float));
     if(p == NULL) return NULL;
-    
+
     bzero(p, length * sizeof(float));
-    
+
     return p;
 }
 
@@ -86,7 +86,7 @@ int fm_mpx_open(char *filename, size_t len) {
     if(filename != NULL) {
         // Open the input file
         SF_INFO sfinfo;
- 
+
         // stdin or file on the filesystem?
         if(filename[0] == '-') {
             if(! (inf = sf_open_fd(fileno(stdin), SFM_READ, &sfinfo, 0))) {
@@ -103,10 +103,10 @@ int fm_mpx_open(char *filename, size_t len) {
                 printf("Using audio file: %s\n", filename);
             }
         }
-            
+
         int in_samplerate = sfinfo.samplerate;
         downsample_factor = 228000. / in_samplerate;
-    
+
         printf("Input: %d Hz, upsampling factor: %.2f\n", in_samplerate, downsample_factor);
 
         channels = sfinfo.channels;
@@ -115,12 +115,12 @@ int fm_mpx_open(char *filename, size_t len) {
         } else {
             printf("1 channel, monophonic operation.\n");
         }
-    
+
         // Choose a cutoff frequency for the low-pass FIR filter
         float cutoff_freq = 15700;
 		//float cutoff_freq = 3000; //For NBFM
         if(in_samplerate/2 < cutoff_freq) cutoff_freq = in_samplerate/2 * .8;
-   
+
 
         // Create the low-pass FIR filter, with pre-emphasis
         double window, firlowpass, firpreemph , sincpos;
@@ -139,13 +139,13 @@ int fm_mpx_open(char *filename, size_t len) {
         a1=(-2.0*ap + 1/(in_samplerate*FIR_PHASES) )/(2.0*bp + 1/(in_samplerate*FIR_PHASES) );
         b1=( 2.0*bp + 1/(in_samplerate*FIR_PHASES) )/(2.0*bp + 1/(in_samplerate*FIR_PHASES) );
         double x=0,y=0;
- 
-        for(int i=0; i<FIR_TAPS; i++) { 
+
+        for(int i=0; i<FIR_TAPS; i++) {
          for(int j=0; j<FIR_PHASES; j++) {
             int mi=i*FIR_PHASES + j+1;// match indexing of Matlab script
             sincpos = (mi)-(((FIR_TAPS*FIR_PHASES)+1.0)/2.0); // offset by 0.5 so sincpos!=0 (causes NaN x/0 )
-            //printf("%d=%f \n",mi ,sincpos); 
-            firlowpass = sin(2 * PI * cutoff_freq * sincpos / (in_samplerate*FIR_PHASES) ) / (PI * sincpos) ; 
+            //printf("%d=%f \n",mi ,sincpos);
+            firlowpass = sin(2 * PI * cutoff_freq * sincpos / (in_samplerate*FIR_PHASES) ) / (PI * sincpos) ;
 
             y=a0*firlowpass + a1*x + b1*y ; // Find the combined impulse response
             x=firlowpass;                   // of FIR low-pass and IIR pre-emphasis
@@ -153,23 +153,23 @@ int fm_mpx_open(char *filename, size_t len) {
                                             // matches the example in the reference material
 
             window = (.54 - .46 * cos(2*PI * (mi) / (double) FIR_TAPS*FIR_PHASES )) ; // Hamming window
-            low_pass_fir[j][i] = firpreemph * window * gain ; 
+            low_pass_fir[j][i] = firpreemph * window * gain ;
           }
         }
-    
+
         printf("Created low-pass FIR filter for audio channels, with cutoff at %.1f Hz\n", cutoff_freq);
-    
+
         if( 0 )
         {
           printf("f = [ ");
-          for(int i=0; i<FIR_TAPS; i++) { 
+          for(int i=0; i<FIR_TAPS; i++) {
             for(int j=0; j<FIR_PHASES; j++) {
               printf("%.5f ", low_pass_fir[j][i]);
             }
           }
           printf("]; \n");
         }
-        
+
         audio_pos = downsample_factor;
         audio_buffer = alloc_empty_buffer(length * channels);
         if(audio_buffer == NULL) return -1;
@@ -179,7 +179,7 @@ int fm_mpx_open(char *filename, size_t len) {
         inf = NULL;
         // inf == NULL indicates that there is no audio
     }
-    
+
     return 0;
 }
 
@@ -190,11 +190,11 @@ int fm_mpx_get_samples(float *mpx_buffer) {
     get_rds_samples(mpx_buffer, length);
 
     if(inf  == NULL) return 0; // if there is no audio, stop here
-    
+
     for(int i=0; i<length; i++) {
         if(audio_pos >= downsample_factor) {
             audio_pos -= downsample_factor;
-            
+
             if(audio_len <= channels ) {
                 for(int j=0; j<2; j++) { // one retry
                     audio_len = sf_read_float(inf, audio_buffer, length);
@@ -218,11 +218,11 @@ int fm_mpx_get_samples(float *mpx_buffer) {
             }
 
            fir_index++;  // fir_index will point to newest valid data soon
-           if(fir_index >= FIR_TAPS) fir_index = 0; 
+           if(fir_index >= FIR_TAPS) fir_index = 0;
            // Store the current sample(s) into the FIR filter's ring buffer
            fir_buffer_left[fir_index] = audio_buffer[audio_index];
-           if(channels > 1) { 
-               fir_buffer_right[fir_index] =  audio_buffer[audio_index+1]; 
+           if(channels > 1) {
+               fir_buffer_right[fir_index] =  audio_buffer[audio_index+1];
            }
         } // if need new sample
 
@@ -237,7 +237,7 @@ int fm_mpx_get_samples(float *mpx_buffer) {
 	// Sanity checks
         if ( iphase < 0 ) {iphase=0; printf("low\n"); }// Seems to run faster with these checks in place
         if ( iphase >= FIR_PHASES ) {iphase=FIR_PHASES-2; printf("high\n"); }
-		
+
         if( channels > 1 )
         {
           for(int fi=0; fi<FIR_TAPS; fi++)  // fi = Filter Index
@@ -246,40 +246,40 @@ int fm_mpx_get_samples(float *mpx_buffer) {
             out_right+=low_pass_fir[iphase][fi]*fir_buffer_right[(fir_index-fi)&(FIR_TAPS-1)];
           }
         }
-        else 
+        else
         {
           for(int fi=0; fi<FIR_TAPS; fi++)  // fi = Filter Index
           {                                 // use bit masking to implement circular buffer
             out_left+=low_pass_fir[iphase][fi] * fir_buffer_left[(fir_index-fi)&(FIR_TAPS-1)];
           }
         }
-		
+
         // Simple broadcast compressor
-        // 
-        // The goal is to get the loudest sounding audio while 
-        // keeping the deviation within legal limits, and 
-        // without degrading the audio quality significantly.  
-        // Don't expect this simple code to match the 
-        // performance of commercial broadcast equipment. 
+        //
+        // The goal is to get the loudest sounding audio while
+        // keeping the deviation within legal limits, and
+        // without degrading the audio quality significantly.
+        // Don't expect this simple code to match the
+        // performance of commercial broadcast equipment.
         float left_abs, right_abs;
-        float compressor_decay=0.999995; 
+        float compressor_decay=0.999995;
         float compressor_attack=1.0;
         // Setting attack to anything other than 1.0 could cause overshoot.
         float compressor_max_gain_recip=0.01;
         left_abs=fabsf(out_left);
-        if( left_abs>left_max ) 
+        if( left_abs>left_max )
         {
-           left_max+= (left_abs-left_max)*compressor_attack; 
+           left_max+= (left_abs-left_max)*compressor_attack;
         }
         else
         {
-           left_max*=compressor_decay; 
+           left_max*=compressor_decay;
         }
 
         if( channels > 1 )
         {
           right_abs=fabsf(out_right);
-          if( right_abs>right_max ) 
+          if( right_abs>right_max )
           {
              right_max+= (right_abs-right_max)*compressor_attack;
           }
@@ -289,15 +289,15 @@ int fm_mpx_get_samples(float *mpx_buffer) {
           }
           if( 1 )// Experimental joint compressor mode
           {
-              if( left_max > right_max ) 
+              if( left_max > right_max )
                   right_max=left_max;
-              else if( left_max < right_max ) 
+              else if( left_max < right_max )
                   left_max=right_max;
           }
           out_right=out_right/(right_max+compressor_max_gain_recip);
         }
         out_left= out_left/(left_max+compressor_max_gain_recip); // Adjust volume with limited maximum gain
- 
+
         // Generate the stereo mpx
         if( channels > 1 ) {
             mpx_buffer[i] +=  4.05*(out_left+out_right) + // Stereo sum signal
@@ -311,15 +311,15 @@ int fm_mpx_get_samples(float *mpx_buffer) {
         }
         else
         {
-            mpx_buffer[i] =  
+            mpx_buffer[i] =
                 mpx_buffer[i] +    // RDS data samples are currently in mpx_buffer :to be Remove in NBFM
                 9.0*out_left;      // Unmodulated monophonic signal
-        } 
-            
-        audio_pos++;   
-        
+        }
+
+        audio_pos++;
+
     }
-    
+
     return 0;
 }
 
@@ -328,8 +328,8 @@ int fm_mpx_close() {
     if(sf_close(inf) ) {
         fprintf(stderr, "Error closing audio file");
     }
-    
+
     if(audio_buffer != NULL) free(audio_buffer);
-    
+
     return 0;
 }
