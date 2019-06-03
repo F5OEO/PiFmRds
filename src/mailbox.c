@@ -252,7 +252,7 @@ int mbox_open() {
         printf("Using mbox device " DEVICE_FILE_NAME ".\n");
         return file_desc;
     }
-    
+
     // Try to create one
     unlink(LOCAL_DEVICE_FILE_NAME);
     if(mknod(LOCAL_DEVICE_FILE_NAME, S_IFCHR|0600, makedev(MAJOR_NUM_A, 0)) >= 0 &&

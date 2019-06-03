@@ -1,13 +1,13 @@
 /*
  * PiFmRds - FM/RDS transmitter for the Raspberry Pi
- * Copyright (C) 1028 Evariste Courjaud, F5OEO	
+ * Copyright (C) 1028 Evariste Courjaud, F5OEO
  * Copyright (C) 2014, 2015 Christophe Jacquet, F8FTK
  * Copyright (C) 2012, 2015 Richard Hirst
  * Copyright (C) 2012 Oliver Mattos and Oskar Weigl
  *
  * See https://github.com/ChristopheJacquet/PiFmRds
  *
- * PI-FM-RDS: RaspberryPi FM transmitter, with RDS. 
+ * PI-FM-RDS: RaspberryPi FM transmitter, with RDS.
  *
  * This file contains the VHF FM modulator. All credit goes to the original
  * authors, Oliver Mattos and Oskar Weigl for the original idea, and to
@@ -35,7 +35,7 @@
  * http://www.icrobotics.co.uk/wiki/index.php/Turning_the_Raspberry_Pi_Into_an_FM_Transmitter
  *
  * All credit to Oliver Mattos and Oskar Weigl for creating the original code.
- * 
+ *
  * I have taken their idea and reworked it to use the Pi DMA engine, so
  * reducing the CPU overhead for playing a .wav file from 100% to about 1.6%.
  *
@@ -115,12 +115,12 @@ extern "C"
 #include "librpitx/src/librpitx.h"
 
 ngfmdmasync *fmmod;
-// The deviation specifies how wide the signal is. 
-// Use 75kHz for WBFM (broadcast radio) 
+// The deviation specifies how wide the signal is.
+// Use 75kHz for WBFM (broadcast radio)
 // and about 2.5kHz for NBFM (walkie-talkie style radio)
 #define DEVIATION        75000
 //FOR NBFM
-//#define DEVIATION        2500 
+//#define DEVIATION        2500
 
 static void
 terminate(int num)
@@ -129,7 +129,7 @@ terminate(int num)
     fm_mpx_close();
     close_control_pipe();
 
-    
+
     exit(num);
 }
 
@@ -161,8 +161,8 @@ int tx(uint32_t carrier_freq, char *audio_file, uint16_t pi, char *ps, char *rt,
         sa.sa_handler = terminate;
         sigaction(i, &sa, NULL);
     }
-        
-   
+
+
 
     // Data structures for baseband data
     float data[DATA_SIZE];
@@ -172,7 +172,7 @@ int tx(uint32_t carrier_freq, char *audio_file, uint16_t pi, char *ps, char *rt,
 
     // Initialize the baseband generator
     if(fm_mpx_open(audio_file, DATA_SIZE) < 0) return 1;
-    
+
     // Initialize the RDS modulator
     char myps[9] = {0};
     set_rds_pi(pi);
@@ -180,7 +180,7 @@ int tx(uint32_t carrier_freq, char *audio_file, uint16_t pi, char *ps, char *rt,
     uint16_t count = 0;
     uint16_t count2 = 0;
     int varying_ps = 0;
-    
+
     if(ps) {
         set_rds_ps(ps);
         printf("PI: %04X, PS: \"%s\".\n", pi, ps);
@@ -189,7 +189,7 @@ int tx(uint32_t carrier_freq, char *audio_file, uint16_t pi, char *ps, char *rt,
         varying_ps = 1;
     }
     printf("RT: \"%s\"\n", rt);
-    
+
     // Initialize the control pipe reader
     if(control_pipe) {
         if(open_control_pipe(control_pipe) == 0) {
@@ -199,20 +199,20 @@ int tx(uint32_t carrier_freq, char *audio_file, uint16_t pi, char *ps, char *rt,
             control_pipe = NULL;
         }
     }
-    
-    
+
+
     printf("Starting to transmit on %3.1f MHz.\n", carrier_freq/1e6);
 
-	
+
     float deviation_scale_factor;
     //if( divider ) // PLL modulation
     {   // note samples are [-10:10]
         deviation_scale_factor=  0.1 * (DEVIATION ) ; // todo PPM
     }
-    
 
 
-    for (;;) 
+
+    for (;;)
 	{
         // Default (varying) PS
         if(varying_ps) {
@@ -227,24 +227,24 @@ int tx(uint32_t carrier_freq, char *audio_file, uint16_t pi, char *ps, char *rt,
             }
             count++;
         }
-        
+
         if(control_pipe && poll_control_pipe() == CONTROL_PIPE_PS_SET) {
             varying_ps = 0;
         }
-        
+
 			if( fm_mpx_get_samples(data) < 0 ) {
                     terminate(0);
                 }
                 data_len = DATA_SIZE;
 				for(int i=0;i< data_len;i++)
 			{
-			
+
             	devfreq[i] = data[i]*deviation_scale_factor;
-				
-				
-            }	
+
+
+            }
 			fmmod->SetFrequencySamples(devfreq,data_len);
-	}    
+	}
 
     return 0;
 }
@@ -259,15 +259,15 @@ int main(int argc, char **argv) {
     uint16_t pi = 0x1234;
     uint32_t mash = -1;
     float ppm = 0;
-    
-    
+
+
     // Parse command-line arguments
     for(int i=1; i<argc; i++) {
         char *arg = argv[i];
         char *param = NULL;
-        
+
         if(arg[0] == '-' && i+1 < argc) param = argv[i+1];
-        
+
         if((strcmp("-wav", arg)==0 || strcmp("-audio", arg)==0) && param != NULL) {
             i++;
             audio_file = param;
@@ -303,6 +303,6 @@ int main(int argc, char **argv) {
 	int FifoSize=DATA_SIZE*2;
     fmmod=new ngfmdmasync(carrier_freq,228000,14,FifoSize);
     int errcode = tx(carrier_freq,  audio_file, pi, ps, rt, ppm, control_pipe);
-    
+
     terminate(errcode);
 }

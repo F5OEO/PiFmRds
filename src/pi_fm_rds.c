@@ -6,7 +6,7 @@
  *
  * See https://github.com/ChristopheJacquet/PiFmRds
  *
- * PI-FM-RDS: RaspberryPi FM transmitter, with RDS. 
+ * PI-FM-RDS: RaspberryPi FM transmitter, with RDS.
  *
  * This file contains the VHF FM modulator. All credit goes to the original
  * authors, Oliver Mattos and Oskar Weigl for the original idea, and to
@@ -34,7 +34,7 @@
  * http://www.icrobotics.co.uk/wiki/index.php/Turning_the_Raspberry_Pi_Into_an_FM_Transmitter
  *
  * All credit to Oliver Mattos and Oskar Weigl for creating the original code.
- * 
+ *
  * I have taken their idea and reworked it to use the Pi DMA engine, so
  * reducing the CPU overhead for playing a .wav file from 100% to about 1.6%.
  *
@@ -195,8 +195,8 @@
 
 #define PLLFREQ            500000000.    // PLLD is running at 500MHz
 
-// The deviation specifies how wide the signal is. 
-// Use 75kHz for WBFM (broadcast radio) 
+// The deviation specifies how wide the signal is.
+// Use 75kHz for WBFM (broadcast radio)
 // and about 2.5kHz for NBFM (walkie-talkie style radio)
 #define DEVIATION        75000
 
@@ -215,7 +215,7 @@ static struct {
     unsigned bus_addr;    /* From mem_lock() */
     uint8_t *virt_addr;    /* From mapmem() */
 } mbox;
-    
+
 
 
 static volatile uint32_t *pwm_reg;
@@ -387,7 +387,7 @@ terminate(int num)
         dma_reg[DMA_CS] = BCM2708_DMA_RESET;
         udelay(10);
     }
-    
+
     fm_mpx_close();
     close_control_pipe();
 
@@ -400,7 +400,7 @@ terminate(int num)
     print_clock_tree();
 
     printf("Terminating: cleanly deactivated the DMA engine and killed the carrier.\n");
-    
+
     exit(num);
 }
 
@@ -461,7 +461,7 @@ int tx(uint32_t carrier_freq, uint32_t divider, char *audio_file, uint16_t pi, c
         sa.sa_handler = terminate;
         sigaction(i, &sa, NULL);
     }
-        
+
     dma_reg = map_peripheral(DMA_VIRT_BASE, DMA_LEN);
     dma_reg = dma_reg+((0x100/sizeof(int))*(DMA_NUMBER));
     pwm_reg = map_peripheral(PWM_VIRT_BASE, PWM_LEN);
@@ -486,7 +486,7 @@ int tx(uint32_t carrier_freq, uint32_t divider, char *audio_file, uint16_t pi, c
         fatal("Could not map memory.\n");
     }
     printf("virt_addr = %p\n", mbox.virt_addr);
-    
+
 
     uint32_t freq_ctl;
     if( divider ) // PLL modulation
@@ -519,7 +519,7 @@ int tx(uint32_t carrier_freq, uint32_t divider, char *audio_file, uint16_t pi, c
        clktmp = clk_reg[GPCLK_CNTL];
        clk_reg[GPCLK_CNTL] = (0xF0F&clktmp) | (0x5a<<24) ; // clear run
        udelay(100);
-       clk_reg[GPCLK_DIV]  = (0x5a<<24) | (divider<<12); 
+       clk_reg[GPCLK_DIV]  = (0x5a<<24) | (divider<<12);
        udelay(100);
        clk_reg[GPCLK_CNTL] = (0x5a<<24) | (5); // src=PLLC
        udelay(100);
@@ -573,7 +573,7 @@ int tx(uint32_t carrier_freq, uint32_t divider, char *audio_file, uint16_t pi, c
     cbp--;
     cbp->next = mem_virt_to_phys(mbox.virt_addr);
 
-    // Here we define the rate at which we want to update the GPCLK control 
+    // Here we define the rate at which we want to update the GPCLK control
     // register.
     //
     // Set the range to 2 bits. PLLD is at 500 MHz, therefore to get 228 kHz
@@ -583,7 +583,7 @@ int tx(uint32_t carrier_freq, uint32_t divider, char *audio_file, uint16_t pi, c
     //
     // However the fractional part may have to be adjusted to take the actual
     // frequency of your Pi's oscillator into account. For example on my Pi,
-    // the fractional part should be 1916 instead of 2012 to get exactly 
+    // the fractional part should be 1916 instead of 2012 to get exactly
     // 228 kHz. However RDS decoding is still okay even at 2012.
     //
     // So we use the 'ppm' parameter to compensate for the oscillator error
@@ -591,8 +591,8 @@ int tx(uint32_t carrier_freq, uint32_t divider, char *audio_file, uint16_t pi, c
     float srdivider = (500000./(2*228*(1.+ppm/1.e6)));
     uint32_t idivider = (uint32_t) srdivider;
     uint32_t fdivider = (uint32_t) ((srdivider - idivider)*pow(2, 12));
-    
-    printf("ppm corr is %.4f, divider is %.4f (%d + %d*2^-12) [nominal 1096.4912].\n", 
+
+    printf("ppm corr is %.4f, divider is %.4f (%d + %d*2^-12) [nominal 1096.4912].\n",
                 ppm, srdivider, idivider, fdivider);
 
     pwm_reg[PWM_CTL] = 0;
@@ -612,7 +612,7 @@ int tx(uint32_t carrier_freq, uint32_t divider, char *audio_file, uint16_t pi, c
     udelay(10);
     pwm_reg[PWM_CTL] = PWMCTL_USEF1 | PWMCTL_PWEN1;
     udelay(10);
-    
+
 
     // Initialise the DMA
     dma_reg[DMA_CS] = BCM2708_DMA_RESET;
@@ -622,7 +622,7 @@ int tx(uint32_t carrier_freq, uint32_t divider, char *audio_file, uint16_t pi, c
     dma_reg[DMA_DEBUG] = 7; // clear debug error flags
     dma_reg[DMA_CS] = 0x10880001;    // go, mid priority, wait for outstanding writes
 
-    
+
     uint32_t last_cb = (uint32_t)ctl->cb;
 
     // Data structures for baseband data
@@ -632,7 +632,7 @@ int tx(uint32_t carrier_freq, uint32_t divider, char *audio_file, uint16_t pi, c
 
     // Initialize the baseband generator
     if(fm_mpx_open(audio_file, DATA_SIZE) < 0) return 1;
-    
+
     // Initialize the RDS modulator
     char myps[9] = {0};
     set_rds_pi(pi);
@@ -640,7 +640,7 @@ int tx(uint32_t carrier_freq, uint32_t divider, char *audio_file, uint16_t pi, c
     uint16_t count = 0;
     uint16_t count2 = 0;
     int varying_ps = 0;
-    
+
     if(ps) {
         set_rds_ps(ps);
         printf("PI: %04X, PS: \"%s\".\n", pi, ps);
@@ -649,7 +649,7 @@ int tx(uint32_t carrier_freq, uint32_t divider, char *audio_file, uint16_t pi, c
         varying_ps = 1;
     }
     printf("RT: \"%s\"\n", rt);
-    
+
     // Initialize the control pipe reader
     if(control_pipe) {
         if(open_control_pipe(control_pipe) == 0) {
@@ -659,8 +659,8 @@ int tx(uint32_t carrier_freq, uint32_t divider, char *audio_file, uint16_t pi, c
             control_pipe = NULL;
         }
     }
-    
-    
+
+
     printf("Starting to transmit on %3.1f MHz.\n", carrier_freq/1e6);
 
 
@@ -670,12 +670,12 @@ int tx(uint32_t carrier_freq, uint32_t divider, char *audio_file, uint16_t pi, c
         deviation_scale_factor=  0.1 * (divider*DEVIATION/  (19.2e6/((double)(1<<20))) ) ; // todo PPM
     }
     else // MASH modulation
-    {   
+    {
         double normdivider=((double)PLLFREQ / (double)carrier_freq) * ( 1 << 12 ); //PLLD=500MHz
-        double highdivider=((double)PLLFREQ / (((double)carrier_freq)+(DEVIATION))) * ( 1 << 12 ); 
+        double highdivider=((double)PLLFREQ / (((double)carrier_freq)+(DEVIATION))) * ( 1 << 12 );
         deviation_scale_factor= 0.1 * (highdivider-normdivider);
-        // Scaling factor for mash is negative because 
-        // a higher division ratio equals a lower frequency. 
+        // Scaling factor for mash is negative because
+        // a higher division ratio equals a lower frequency.
     }
     //printf("deviation_scale_factor = %f \n", deviation_scale_factor);
 
@@ -694,11 +694,11 @@ int tx(uint32_t carrier_freq, uint32_t divider, char *audio_file, uint16_t pi, c
             }
             count++;
         }
-        
+
         if(control_pipe && poll_control_pipe() == CONTROL_PIPE_PS_SET) {
             varying_ps = 0;
         }
-        
+
         usleep(5000);
 
         uint32_t cur_cb = mem_phys_to_virt(dma_reg[DMA_CONBLK_AD]);
@@ -717,16 +717,16 @@ int tx(uint32_t carrier_freq, uint32_t divider, char *audio_file, uint16_t pi, c
                 data_len = DATA_SIZE;
                 data_index = 0;
             }
-            
+
             float dval = data[data_index]*deviation_scale_factor;
             int intval;
             if( divider ) // PLL modulation
             {
-              intval = ( (int)((floor)(dval)) & ~0x3 ) ; 
-              // clock settings from boot code seem to always leave 2 lsb clear 
+              intval = ( (int)((floor)(dval)) & ~0x3 ) ;
+              // clock settings from boot code seem to always leave 2 lsb clear
             }
             else // MASH modulation
-            { 
+            {
                intval = (int)((floor)(dval)) ;
             }
             data_index++;
@@ -756,15 +756,15 @@ int main(int argc, char **argv) {
     uint16_t pi = 0x1234;
     uint32_t mash = -1;
     float ppm = 0;
-    
-    
+
+
     // Parse command-line arguments
     for(int i=1; i<argc; i++) {
         char *arg = argv[i];
         char *param = NULL;
-        
+
         if(arg[0] == '-' && i+1 < argc) param = argv[i+1];
-        
+
         if((strcmp("-wav", arg)==0 || strcmp("-audio", arg)==0) && param != NULL) {
             i++;
             audio_file = param;
@@ -800,9 +800,9 @@ int main(int argc, char **argv) {
 
 
     // Choose an integer divider for GPCLK0
-    // 
-    // There may be improvements possible to this algorithm. 
-    double xtal_freq_recip=1.0/19.2e6; // todo PPM correction 
+    //
+    // There may be improvements possible to this algorithm.
+    double xtal_freq_recip=1.0/19.2e6; // todo PPM correction
     int best_divider=0;
 
     // Optional loop to print tuning solutions for all FM frequencies
@@ -822,19 +822,19 @@ int main(int argc, char **argv) {
         min_int_multiplier=((int)((double)(carrier_freq-10-DEVIATION)*divider*xtal_freq_recip));
         if( min_int_multiplier!=max_int_multiplier ) continue; // don't cross integer boundary
 
-        solution_count++;  // if we make it here the solution is acceptable, 
+        solution_count++;  // if we make it here the solution is acceptable,
         fom=0;             // but we want a good solution
 
         if( carrier_freq*divider >  900e6 ) fom++; // prefer freqs closer to 1000
         if( carrier_freq*divider < 1100e6 ) fom++;
         if( carrier_freq*divider >  800e6 ) fom++; // accepted frequency range
         if( carrier_freq*divider < 1200e6 ) fom++;
-        
+
 
         frac_multiplier=((double)(carrier_freq)*divider*xtal_freq_recip);
         int_multiplier = (int) frac_multiplier;
         frac_multiplier = frac_multiplier - int_multiplier;
-        if( (frac_multiplier>0.2) && (frac_multiplier<0.8) ) fom++; // prefer mulipliers away from integer boundaries 
+        if( (frac_multiplier>0.2) && (frac_multiplier<0.8) ) fom++; // prefer mulipliers away from integer boundaries
 
 
         //if( divider%2 == 1 ) fom+=2; // prefer odd dividers
@@ -850,19 +850,19 @@ int main(int argc, char **argv) {
         }
       }
       printf(" multiplier:%f divider:%d VCO: %4.1fMHz\n",carrier_freq*best_divider*xtal_freq_recip,best_divider,(double)carrier_freq*best_divider/1e6);
-    
-      if( solution_count==0) 
+
+      if( solution_count==0)
             printf("No tuning solution found. (76.8 and 96.0 are not supported.)\n");
 
     }// Optional loop to print tuning solutions
 
-    if( best_divider==0) return -1 ; 
+    if( best_divider==0) return -1 ;
 
     if( mash!=-1 )
     {
        best_divider=0;  // if divider=0,  use MASH divider instead of PLL modulation
     }
     int errcode = tx(carrier_freq, best_divider, audio_file, pi, ps, rt, ppm, control_pipe);
-    
+
     terminate(errcode);
 }
